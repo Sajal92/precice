@@ -6,25 +6,51 @@ import sysconfig
 
 ##################################################################### FUNCTIONS
 
+def checkHeader(header, usage, conf):
+    if type(header) is list:
+        for h in header:
+            checkHeader(h, usage, conf)
+    else:
+        if not conf.CheckCXXHeader(header):
+            print("ERROR: Header '" + header + "'" + usage + "not found!")
+            Exit(1)
+
+
+def checkLib(lib, usage, conf):
+    if type(lib) is list:
+        for l in lib:
+            checkHeader(l, usage, conf)
+    else:
+        if not conf.CheckLib(lib, autoadd=0, language="C++"):
+            print("ERROR: Library '" + lib + "'" + usage + "not found!")
+            Exit(1)
+
+
+def checkLibAndHeader(lib, header, usage, conf):
+    if type(lib) is list:
+        for l in lib:
+            checkLibAndHeader(l, header, usage, conf)
+    elif type(header) is list:
+        for h in header:
+            checkLibAndHeader(lib, h, usage, conf)
+    else:
+        if not conf.CheckLibWithHeader(lib, header = header, autoadd=0, language="C++"):
+            print("ERROR: Library '" + lib + "' or header '" + header + "'" + usage + "not found.")
+            Exit(1)
+
+
 def checkAdd(lib = None, header = None, usage = ""):
     """ Checks for a library and/or header and appends it to env if not already appended. """
 
     usage = " (needed for " + usage + ") " if usage else ""
     if lib and header:
-        if not conf.CheckLibWithHeader(lib, header = header, autoadd=0, language="C++"):
-            print("ERROR: Library '" + lib + "' or header '" + header + "'" + usage + "not found.")
-            Exit(1)
+        checkLibAndHeader(lib, header, usage, conf)
         conf.env.AppendUnique(LIBS = [lib])
     elif lib:
-        if not conf.CheckLib(lib, autoadd=0, language="C++"):
-            print("ERROR: Library '" + lib + "'" + usage + "not found!")
-            Exit(1)
+        checkLib(lib, usage, conf)
         conf.env.AppendUnique(LIBS = [lib])
     elif header:
-        if not conf.CheckCXXHeader(header):
-            print("ERROR: Header '" + header + "'" + usage + "not found!")
-            Exit(1)
-
+        checkHeader(header, usage, conf)
 
 
 def print_options(vars):
